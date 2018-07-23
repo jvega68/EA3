@@ -1,6 +1,6 @@
-![Instituto Tecnológico Autónomo de México](../images/itam.gif)
+![Instituto Tecnológico Autónomo de México](figs/itam.gif)
 
-![Departamento de Estadística](../images/estadistica.gif)
+![Departamento de Estadística](figs/estadistica.gif)
 
 # <p style="text-align: center;"> Calendario Estadística Aplicada III</p>
 
