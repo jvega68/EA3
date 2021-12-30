@@ -1,5 +1,4 @@
-PLEASE NOTE:  THIS PRODUCT WILL NOT BE SUPPORTED BY PEARSON TECH 
-SUPPORT.
+PLEASE NOTE:  THIS PRODUCT WILL NOT BE SUPPORTED BY PEARSON TECH SUPPORT.
 
 Johnson/Wichern:  Applied Multivariable Statistical Analysis
 Copyright 2001 by Prentice Hall, Inc. All rights reserved.
