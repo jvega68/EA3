@@ -1,0 +1,204 @@
+---
+title: 'Lab3: Normalidad Multivariada'
+author: "Jorge de la Vega"
+date: "16/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Normales bivariadas
+
+Podemos explorar la distribución normal a través de gráficas de diferentes tipos 
+
+Primero univariada
+
+```{r}
+curve(dnorm(x, mean = 0, sd = 1), from = -3, to = 3)  # densidad
+curve(pnorm(x, mean = 0, sd = 1), from = -3, to = 3)  # distribución
+hist(rnorm(100), breaks = 10)  # muestra 
+```
+
+Para el caso multivariado hay varias opciones
+
+```{r}
+library(MASS)
+library(mnormt) # equivalentes multivariados de normal y t
+x <- y <- seq(-5, 5, 0.3)
+Mu <- c(0,1)
+Sigma <- matrix(c(1, 0.75, 0.75, 1), nrow = 2)
+f <- function(x,y) dmnorm(cbind(x,y), mean = Mu, varcov = Sigma)
+f(1,2)  # evalua a un real
+z <- outer(x,y,f) # evalua f en cada x y y de un grid
+persp(x,y,z, col = "green",phi = 30, theta = -20, shade = 0.1, r = 10, d = 5)
+rgl::persp3d(x,y,z, col = "green")  # interactivo
+contour(x, y, z, col = "blue", nlevels = 10)  # curvas de nivel
+
+X <- rmnorm(n = 1000, mean = Mu, varcov = Sigma)  # muestra normal multivariada
+# también se puede usar la función rmvnorm de MASS
+Y <- mvrnorm(10,mu = Mu, Sigma = Sigma)  # muestra normal multivariada
+H <- kde2d(X[,1], X[,2], n = 100) # objeto a grafica
+contour(H)  # curvas de concentración
+image(H)    # versión como mapa de calor
+```
+
+
+## Evaluación de Normalidad
+
+- En muchos contextos, es conveniente evaluar la hipótesis de que los datos siguen una distribución normal multivariada, ya que varios métodos multivariados suponen normalidad para poder realizar inferencia.
+
+- Consideremos algunos ejemplos prácticos en este laboratorio.
+
+### Ejercicio 1.
+
+Los datos siguientes (Tabla 1.5) son 42 medidas sobre variables sobre contaminación del aire registradas al mediodía en los Angeles sobre diferentes días. Las variables que se incluyen son: 
+
+- $x_1$ Viento 
+- $x_2$ Radiación solar
+- $x_3$ $CO$
+- $x_4$ $NO$
+- $x_5$ $NO_2$
+- $x_6$ $O_3$
+- $x_7$ $HC$
+
+Datos similares se pueden encontrar para la Ciudad de México, más completo, en la siguiente [liga](http://www.aire.cdmx.gob.mx/default.php?opc=%27aKBh%27), aunque requieren más trabajo previo.
+
+1. Construir un qq-plot para las mediciones de radiación solar y probar normalidad basado en el coeficiente de correlación $r_Q$ al nivel $\alpha = 0.05$ (prueba de Shapiro-Wilks).
+
+```{r}
+X <- read.delim(file = "https://raw.githubusercontent.com/jvega68/EA3/master/datos/J&W/T1-5.DAT", sep = "",
+                header = F, col.names = c("viento","rad",paste0("x",3:7)))
+```
+
+```{r}
+# qqplot
+qqnorm(scale(X$rad))  # estandarizamos los datos para que la comparación sea adecuada. 
+abline(a=0,b=1)
+```
+
+El coeficiente de correlación $r_Q$ entre los valores observados y los cuantiles teóricos se puede obtener directamente de la función `qqnorm`
+
+```{r}
+a <- qqnorm(X$rad,plot.it = F)
+(r_Q <- cor(a$x,a$y)) # no se requiere estandarizar 
+# Podemos obtener la prueba de Shapiro-Wilk directamente:
+shapiro.test(X$rad) #H0: los datos son normales vs Ha: los datos no son normales
+```
+
+Se concluye que los datos no son normales. 
+
+2. Examinar el par de variables $x_5$ y $x_6$ para normalidad bivariada:
+  - Calcular las distancias de Mahalanobis para todos los puntos
+  - Determinar la proporción de observaciones que caen aproximadamente en el contorno de probabilidad del 50% de la normal bivariada.
+  - Construir una gráfica $\chi^2$ con las distancias ordenadas.
+
+```{r}
+plot(X$x5,X$x6) # no parecen seguir una distribución normal bivariada. 
+Z <- X[,5:6]
+d2 <- mahalanobis(Z,center = colMeans(Z), cov = cov(Z))
+
+# Aquí podemos usar el hecho de que las distancias de Mahalanobis, se deben distribuir como chi^2(p)
+qqplot(d2,rchisq(length(d2),2))
+abline(a = 0, b = 1)
+# También podemos calcular la proporción de observaciones que caen en el elipsoide de tamaño 50%
+sum(d2 <= qchisq(0.5,2))/42  # se esperaría que hubiera la mitad de las observaciones, hay ~ 62%
+```
+
+También podemos añadir las elipses de una normal bivariada en el plano para checar visualmente en este caso:
+
+```{r}
+library(ellipse)
+plot(Z)
+lines(ellipse(cov(Z), centre = colMeans(Z),level = 0.5))
+lines(ellipse(cov(Z), centre = colMeans(Z),level = 0.1))
+lines(ellipse(cov(Z), centre = colMeans(Z),level = 0.95))
+```
+
+
+### Ejercicio 2.
+
+Los datos siguientes (Tabla 4.6) consisten en 130 observaciones generadas por scores en una prueba sicológica administrada a adolescentes peruanos (edades 15, 16 y 17). Se tienen las siguientes variables:
+
+- sexo (1 = hombre, 2 = mujer)
+- socio (estaus socioeconómico 1 = bajo, 2 = medio)
+- 5 scores de subescalas etiquetadas independencia (indep), soporte (supp), benevolencia (benev), conformidad (conform) y liderazgo (leader).  
+
+1. Examinar cada variable si puede ser normal. Para las que no, ver si se pueden transformar a normalidad aproximada. 
+2. Revisar normalidad multivariada
+
+```{r}
+X <- read.delim(file = "https://raw.githubusercontent.com/jvega68/EA3/master/datos/J%26W/T4_6.DAT",
+                sep = "", col.names = c("indep","supp","benev","conform","leader","sex","socio"))
+dim(X)
+head(X)
+```
+
+Hacemos las gráficas de los histogramas de cada una de las variables
+
+```{r}
+par(mfrow = c(2,3))
+for(i in 1:5){ 
+  hist(X[,i],breaks = 20, main = paste("Variable:",names(X)[i]), prob = T)
+  a <- seq(min(X[,i]),max(X[,i]), length.out = nrow(X))
+  lines(a,dnorm(a, mean = mean(X[,i]), sd = sd(X[,i])))
+}
+```
+
+Se puede ver que los histogramas están un poco sesgados. Podemos probar formalmente normalidad, o hacer qq-plots
+
+```{r}
+for(i in 1:5){
+  print(names(X)[i])
+  print(shapiro.test(X[,i]))
+}
+```
+
+indep, supp y leader no pasan la prueba de normalidad. En estos casos, conviene buscar una transformación que normalice los datos. 
+
+```{r}
+library(MASS)
+b <- boxcox(lm(X$indep ~ 1)) # por ejemplo, raíz cuadrada
+
+indep <- sqrt(X$indep)
+hist(indep, prob =T)
+a <- seq(min(indep),max(indep), length.out = length(indep))
+lines(a,dnorm(a, mean = mean(indep), sd = sd(indep)))
+shapiro.test(indep)  # mejora considerablemente 
+# Para extraer el valor de lambda óptimo
+(lam <-b$x[which.max(b$y)])
+
+# BoxCox simultáneo:
+library(car)
+powerTransform(X[,c(1,2,5)])
+powerTransform(X$indep)
+```
+
+Podemos hacer algunas pruebas de normalidad sobre algunas combinaciones lineales de las variables. Primero transformamos las variables:
+
+```{r}
+Y <- X[,1:5]  # hacemos una copia para hacer las transformaciones
+Y$indep <- sqrt(X$indep)
+Y$supp  <- X$supp^1.33
+Y$leader <- X$leader^0.5
+```
+
+Definimos un procedimiento que genere direcciones aleatorias de las variables que nos interesan
+
+```{r}
+library(rggobi)
+ggobi(Y)  # Podemos visualizar un conjunto de proyecciones.
+# seleccionamos una dirección unitaria en la esfera 
+
+u <- mvrnorm(1, mu = rep(0,5), Sigma = diag(5))
+u <- u/sqrt(sum(u^2))
+# genera una combinación lineal
+z <- apply(Y,1,function(x)sum(x*u))
+hist(z)
+# verifica normalidad
+shapiro.test(z)
+```
+
+
+  

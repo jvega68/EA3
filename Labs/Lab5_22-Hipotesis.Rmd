@@ -1,0 +1,413 @@
+---
+title: 'Lab5: Pruebas de hipótesis'
+author: "Jorge de la Vega"
+date: "11/03/2022"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NULL)
+```
+
+## Pruebas de hipótesis
+
+### Mediciones de primer y segundo hijo.
+
+Frets (1921) tomó medidas antropométricas del primer y segundo hijo en
+una muestra de 25 familias. Las variables que consideró son las
+siguientes:
+
+-   `l1` y `l2`: longitud de la cabeza del primer y segundo hijo,
+    respectivamente.
+-   `b1` y `b2`: amplitud de la cabeza del primer y segundo hijo,
+    respectivamente.
+
+Los datos están en el paquete `boot` en R:
+
+```{r}
+library(boot)
+data(frets)
+str(frets)
+```
+
+Visualiza:
+
+```{r}
+library(MASS)
+parcoord(frets[,c(1,3,2,4)], main = "Medidas de cabeza 25 pares de hijos")
+par(mfrow=c(2,2))
+for(i in 1:4) hist(frets[,i],main = names(frets)[i])
+
+# Gráfica para verificar normalidad multivariada
+par(mfrow=c(1,1), pty="s")
+set.seed(1)
+qqplot(rchisq(25,4),mahalanobis(frets, center = colMeans(frets), cov = var(frets)),ylab="d2")
+abline(a=0,b=1)
+```
+
+Para este ejercicio se puede hacer una prueba de hipótesis para cada
+media, cada varianza y cada covarianza. Con 4 variables se tienen 14
+parámetros a probar y hay $2^{14} = 16,384$ posibles subconjuntos a
+formar combinando estos parámetros.
+
+Los estimadores del vector de media y de matriz de varianzas y
+covarianzas son:
+
+```{r}
+(n <- nrow(frets))
+(xbar <- colMeans(frets)) # vector de medias
+(S <- var(frets))  # estimador insesgado
+sum(diag(S))       # varianza total
+det(S)             # varianza generalizada
+```
+
+Supongamos momentáneamente que `l1` y `l2` son normales independientes y
+que cada una tiene varianza 100 (no lo son, pero supongamos). Se desea
+probar la hipótesis de que ambas medias son 182:
+
+\[ H_1: l1 \sim N(182,100),\qquad H_2: l2 \sim N(182,100) \]
+
+-   ¿Cuál es la prueba univariada usual para cada hipótesis?
+-   La hipótesis bivariada considera que se dan las dos hipótesis
+    simultáneamente: $H_3: H_1 \cap H_2$, que será cierta si y sólo si
+    ambas hipótesis son ciertas. Hay varias formas de probar $H_3$:
+
+1.  Acepta $H_3$ si y sól si se aceptan $H_1$ y $H_2$ univariadamente.
+2.  Si $H_1$ y $H_2$ son verdaderas,
+    $z_3 = (z_1+z_2)/\sqrt{2} \sim N(0,1)$. Como $z_3 = 1.965757$, el
+    p-value es 0.0493, por lo que se rechaza $H_3$. Notar que en este
+    caso ¡la hipótesis nula multivariada se rechaza a pesar de que cada
+    prueba en lo individual no fue significativa.
+3.  Si $H_1$ y $H_2$ son verdaderas, entonces
+    $z_4 = z_1^2+z_2^2 \sim \chi^2_2$. En este caso \$z_4 = 4.306 y el
+    p-value es 0.1161, por lo que la prueba no es significativa, por lo
+    que no se rechaza $H_3$.
+4.  Otra opción es considerar la correlación entre $z_1$ y $z_2$ (es
+    decir, que no sean independientes como supusimos), lo que implica
+    considerar la distancia de Mahalanobis, y por lo tanto una región de
+    aceptación elíptica.
+
+Las pruebas anteriores, según la estadística de prueba que se utilice,
+tienen regiones de rechazo de diferente formageométrica: rectangular,
+linear, circular y elíptica. La forma de la región de no rechazo puede
+llevar a resultados contradictorios.
+
+## Pruebas basadas en la razón de verosimilitud.
+
+Hay tres casos a considerar en el caso de normal multivariada.
+
+-   Caso A: $H_0: \mu = \mu_0$ con $\Sigma_0$ conocida
+-   Caso B: $H_0: \mu = \mu_0$ con $\Sigma$ desconocida
+-   Caso C: $H_0: \Sigma = \Sigma_0$ con $\mu$ desconocida
+
+### Caso A
+
+Hay más, pero estos son muy comunes. Para el ejemplo que estamos
+considerando, estamos en el caso A. La prueba de versimilitud nos da en
+este caso:
+
+```{r}
+mu0 <- c(182,182)
+S0 <- 100* diag(2)
+(LRT <- as.numeric(n*((xbar[c(1,3)]-mu0) %*% solve(S0) %*% (xbar[c(1,3)]-mu0))))
+pchisq(LRT,2,lower.tail = F) #p-value de la distribución chi^2 con 2 grados de libertad
+```
+
+¿Conclusión? no hay evidencia para rechazar la hipótesis. Para calcular
+una región de confianza al 95%, consideramos la ecuación:
+
+\[ 25(185.72 -\mu\_1,183.84-\mu\_3)'0.01I_2(185.72-\mu\_1,183.84-\mu\*3)
+\<\* \chi\^2{0.95,2}\]
+
+que es lo mismo que la región elíptica
+
+\[ (185.72 -\mu\_1)\^2 + (183.84-\mu\_3)\^2 \< 23.96 \]
+
+```{r}
+library(ellipse)
+par(pty = "s")
+plot(frets[,c(1,3)], pch = 16, cex = 1.2, 
+     main= "Datos de longitud de cráneos", 
+     ylim = c(160,210), xlim = c(160,210))
+lines(ellipse(0, centre = xbar[c(1,3)], t = sqrt(qchisq(0.95,2))))
+points(xbar[1],xbar[3], col = "red", cex = 1.3, pch = 16)
+```
+
+### Caso B
+
+En este caso, tenemos $(l1,l2) \sim N_2(\mu_0,\Sigma)$ con
+$\mu_0 = [182,182]'$ y $\Sigma$ debe estimarse. La estadística de prueba
+sale de la $\Lambda$ de Wilks y se puede calcular como la función de la
+$T^2$ de Hotelling.
+
+Cálculo opción 1: directo
+
+```{r}
+p <- 2
+X <- as.matrix(frets[,c(1,3)], ncol = 2) # subconjunto de datos
+S0 <- (t(X - mu0) %*% (X - mu0))/n  # Bajo H0
+S1 <- (n-1)/n*S[c(1,3),c(1,3)]    # Subconjunto de la Sn, de máxima verosimilitud
+(T2 <- (n-1)*(det(S0)/det(S1)-1))# Estadística de prueba
+(F0 <- T2*(n-p)/(p*(n-1)))
+1-pf(F0,p,n-p)
+```
+
+Cálculo opción 2
+
+```{r}
+p <- 2
+(T2 <- n*mahalanobis(xbar[c(1,3)], center = mu0, cov = S[c(1,3),c(1,3)]))
+(F0 <- T2*(n-p)/(p*(n-1)))
+1-pf(F0,p,n-p)
+```
+
+#### Ejemplo 5.2
+
+Los siguientes datos corresponden a la transpiración de 20 mujeres
+sanas:
+
+-   $V_1=$ tasa de duración
+-   $V_2=$ contenido de sodio
+-   $V_3=$ contenido de potasio
+
+Se quiere probar la hipótesis $H_0: \mu = [4,50,10]'$ vs
+$H_1: \mu \neq [4,5,10]'$ a un nivel de significancia del 10%. Bajo el
+supuesto de normalidad
+
+```{r}
+Z <- read.table("https://raw.githubusercontent.com/jvega68/EA3/master/datos/J%26W/T5-1.DAT",
+                sep = "",header = FALSE)
+xbar <- colMeans(Z)
+S <- var(Z)
+p <- ncol(Z); n <- nrow(Z)
+mu0 <- c(4,50,10)
+```
+
+Calculamos la $T^2$ y el p-value de la prueba
+
+```{r}
+(T2 <- n*mahalanobis(xbar, center = mu0, cov = S))
+(F0 <- (n-p)/(p*(n-1))*T2)
+1-pf(F0,p,n-p)
+```
+
+### Caso C
+
+Esta es una prueba para varianzas. La estdítica de prueba es de la
+forma:
+
+\[-2\log\lambda = n \cdot tr(\Sigma\_0\^{-1}S) - n
+\log(\Sigma\_0\^{-1}S) -np\]
+
+Sea $a$ el promedio y $g$ la media geométrica de de los valores propios
+de $\Sigma_0^{-1}S$. De tal manera que $tr(\Sigma_0^{-1}S)= pa$ y
+$|\Sigma_0^{-1}S| = g^p$ Entonces la prueba se puede escribir como:
+
+\[-2\log\lambda = np(a-\log(g)-1) \]
+
+La estadística no tiene una distribución simple. Entonces conviene usar
+la distribución asintótica de $-2\log\lambda$ que es
+$\chi^2_{(p(p+1)/2)}$
+
+En los datos de Frets
+
+```{r}
+n <- 25; p <- 2
+S0 <- matrix(c(100, 50, 50, 100 ), nrow = 2) # hipótesis a evaluar
+(lambdas <- eigen(solve(S0)%*%S1)$values)
+a <- mean(lambdas)
+g <- exp(mean(log(lambdas)))
+F0 <- n*p*(a-log(g)-1) # Estadística
+1-pchisq(F0,p*(p+1)/2) # No se rechaza la hipótesis. 
+```
+
+## Intervalos de confianza.
+
+### Ejemplo 1.
+
+Las calificaciones obtenidas por 87 estudiantes de colegios para tres
+materias están en las siguientes variables:
+
+-   $X_1$ = ciencias sociales e historia
+-   $X_2$ = verbal
+-   $X_3$ = ciencia
+
+```{r}
+X <- read.table("https://raw.githubusercontent.com/jvega68/EA3/master/datos/J%26W/T5-2.DAT",
+           col.names = c("X1","X2","X3"))
+
+#dimensiones
+(n <- nrow(X))
+(p <- ncol(X))
+
+# Estimadores máximo verosímiles
+(xbar <- colMeans(X))
+(S <- var(X))
+(Sn <- (n-1)/n*S)
+```
+
+¿Estos datos son normales?
+
+```{r}
+Z <- scale(X)  # variables estandarizadas
+pairs(Z)
+par(mfcol=c(2,p))
+for(i in 1:p){
+    qqnorm(Z[,i])
+    abline(a=0,b=1,col="red")
+    hist(Z[,i],breaks=20, main="")
+}
+
+for(i in 1:p)print(ks.test(Z[,i],"pnorm"))
+```
+
+1.  Obtener los intervalos de confianza **simultáneos** del 95% para
+    $\mu_1$, $\mu_2$ y $\mu_3$
+
+```{r}
+c1 <- p*(n-1)/(n-p)*qf(.05,p,n-p,lower.tail = F)
+for(i in 1:3)print(xbar[i] + c(-1,1)*sqrt(c1*diag(S)[i]/n ))
+```
+
+Usualmente, los intervalos simultáneos basados en la $T^2$ de Hotelling
+tienden a ser más anchos que los intervalos marginales porque toman en
+cuenta todas las posibles dependencias entre las variables.
+
+Para las diferencias de las medias:
+
+```{r}
+int.simul <- function(alfa,n,xbar,S,a){
+  p <- length(xbar)
+  c1 <- p*(n-1)/(n-p)*qf(alfa,p,n-p,lower.tail = F)
+  (as.numeric(t(a)%*%xbar)) + c(-1,1)*sqrt(c1* as.numeric(t(a)%*%S%*%a)/n)
+}
+
+int.simul(alfa = 0.05, n = n, xbar = xbar, S = S, a=c(1,-1,0))
+int.simul(alfa = 0.05, n = n, xbar = xbar, S = S, a=c(0,1,-1))
+int.simul(alfa = 0.05, n = n, xbar = xbar, S = S, a=c(1,0,-1) )
+```
+
+2.  Obtener un intervalo de confianza de 95% para el promedio de las
+    tres calificaciones de cada estudiante.
+
+```{r}
+a <- c(1/3,1/3,1/3)  #ponderador para la media de los examenes
+int.simul(alfa = 0.05, n = n, xbar = xbar, S = S, a=rep(1/3,3))
+```
+
+3.  Obtener los intervalos marginales uno a la vez al 95%
+
+```{r}
+c2 <- qt(.05/2,n-1,lower.tail = F)
+for(i in 1:3) print(xbar[i] + c(-1,1)*c2*sqrt(diag(S)[i]/n))
+```
+
+4.  Obtener los intervalos Bonferronizados para cada media.
+
+```{r}
+c3 <- qt(.05/(2*p), n-1, lower.tail = F)
+for(i in 1:3) print(xbar[i] + c(-1,1)*c3*sqrt(diag(S)[i]/n))
+```
+
+5.  Graficar las regiones de confianza y los intervalos simultáneos,
+    marginales y bonferronizados para $\mu_1$ y $\mu_2$.
+
+```{r}
+library(ellipse)
+
+plot(X[,1],X[,2],pch=16,cex=0.8)
+points(xbar[1],xbar[2],pch=16,col="red")
+
+# simultáneos
+abline(v = xbar[1] +c(-1,1)*sqrt(c1*diag(S)[1]/n) )
+abline(h = xbar[2] +c(-1,1)*sqrt(c1*diag(S)[2]/n) )
+
+#Elipse
+lines(ellipse(S, centre = xbar,level = 0.1, which= 1:2), col = "red", type = "l")
+
+# marginales
+abline(v = xbar[1] + c(-1,1)*c2*sqrt(diag(S)[1]/n), col = "red")
+abline(h = xbar[2] + c(-1,1)*c2*sqrt(diag(S)[2]/n), col = "red")
+
+# Bonferronizados 
+abline(v = xbar[1] + c(-1,1)*c3*sqrt(diag(S)[1]/n), col = "blue")
+abline(h = xbar[2] + c(-1,1)*c3*sqrt(diag(S)[2]/n), col = "blue")
+
+```
+
+## Ejemplo 2: Aplicación a Control de Calidad
+
+En los procesos de producción se tienen que controlar los parámetros
+para que no se afecte la calidad del producto o servicio.
+
+Una *gráfica de control*, que consiste de una gráfica de los datos
+medidos en función del tiempo, sirve para identificar y visualizar
+ocurrencias de causas especiales de variación, como puede ser fallas de
+componentes, etc. Estos valores usualmente rebasan *límites de control*.
+
+Los siguientes datos corresponden a mediciones de 4 variables medidas en
+intervalos de 5 segundos de una soldadora en una lńea de producción de
+autos. Las variables son: $Y_1=$ voltaje (volts) $Y_2=$ Corriente
+(amperes) $Y_3=$ velocidad de alimentación (pulgadas/minuto) $Y_4=$
+Flujo de gas inerte (pies cúblicos/ minuto)
+
+```{r}
+Y <- read.table("https://raw.githubusercontent.com/jvega68/EA3/master/datos/J%26W/T5-9.DAT",
+                col.names = c("voltaje","corriente","velocidad","flujo"))
+(n <-nrow(Y))
+(p <- ncol(Y))
+head(Y)
+
+# Construcción de la gráfica de control
+# Para cada una de las variables se crea la gráfica de los puntos con la media y dos lineas
+# Upper control limit (UCL) mean(x) + 3*sd(x)
+# Lower control limit (LCL) mean(x) - 3*sd(x)
+par(mfrow=c(2,2))
+for(i in 1:p){
+  plot(Y[,i], main = names(Y)[i], ylim = c(min(Y[,i]), max(Y[,i])) + c(-1,1)*3*sd(Y[,i]),
+       xlab = "índice", ylab = names(Y)[i])
+  abline(h = mean(Y[,i]) + c(-1,0,1)*3*sd(Y[,i]), col = "red", lwd = 1)
+}
+```
+
+Hay dos versiones multivariadas de una gráfica de control, que tomé en
+cuenta las correlaciones entre las diferentes variables:
+
+1.  Elipse de control
+2.  Gráfica $T^2$
+
+La elipse de control es básicamente la que se obtiene con los
+estimadores máximo-verosímiles de dos variables a la vez:
+
+```{r}
+library(ellipse)
+indices <- combn(1:p, 2, FUN = list, simplify = T) #lista de combinación de índices
+variables <- combn(1:p, 2, FUN = function(x)paste0("Y",x)) #matriz de nombres de la combinación
+par(mfrow=c(2,3))
+for(i in 1:choose(p,2)){
+  ind <- indices[[i]]
+  
+  plot(Y[,ind], xlim = mean(Y[,ind[1]]) + c(-4,4) * sd(Y[,ind[1]]), 
+       ylim = mean(Y[,ind[2]])+c(-4,4)*sd(Y[,ind[2]]))
+  
+  lines(ellipse(var(Y[,ind]), centre = colMeans(Y[,ind]), 
+                level = 0.99), col = "red", type = "l")
+}
+```
+
+La gráfica $T^2$ calcula para cada observación el valor de la
+estadística $T^2$ y la compara contra el límite superior UCL
+
+```{r}
+par(mfrow=c(1,1))
+Ti2 <- numeric()
+for(i in 1:n) Ti2[i] = as.numeric(as.matrix(Y[i,] - colMeans(Y)) %*% solve(var(Y)) %*% 
+                                          t(Y[i,] - colMeans(Y)))
+
+plot(Ti2, ylim = c(0,1.4*max(Ti2)), pch = 16, main = "gráfica estadística T^2")
+abline(h = qchisq(.95,p),col="yellow",lwd=3) #UCL
+abline(h = qchisq(.99,p),col="red",lwd=3) #UCL
+```

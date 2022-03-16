@@ -1,0 +1,318 @@
+---
+title: "Ejemplo de Análisis de Datos"
+author: "Pon aquí tu nombre"
+date: "Pon aquí la fecha que quieras"   
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NULL, size = "tiny", warning = F)
+options(width = 100)
+```
+
+
+# Ejemplo: Datos de nacimiento
+	
+Los siguientes datos corresponden a 427,323 registros con 13 variables de nacimientos de bebés en los Estados Unidos durante 2006[^1]. Mayor detalle sobre el pre-proceso de los datos se puede encontrar en el libro *R in a Nutshell*, p. 274.
+
+[^1]: Los datos originales se pueden obtener de: [Vitalstatsonline](http://www.cdc.gov/nchs/data_access/Vitalstatsonline.htm) y el diccionario de datos está en la siguiente liga: [Userguide2016.pdf](ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Dataset_Documentation/DVS/natality/UserGuide2016.pdf). Los datos usados aquí corresponden al 10\% de la muestra de datos originales. El archivo original tiene 3.1Gb.
+
+
+```{r, comment = #, message = F}
+library(dplyr)
+library(lattice)
+library(tidyverse)
+library(nutshell)     # paquete que contiene los datos
+data(births2006.smpl) # datos de nacimiento
+str(births2006.smpl)  # estructura de los datos
+head(births2006.smpl) # Primeros renglones. Se pueden ver los últimos con tail
+```
+
+La descripción de los variables disponibles conforman el *diccionario de datos* que usualmente contiene los *metadatos* que describen las características relevantes de los datos.
+
+- `DOB_MM`: mes de la fecha de nacimiento 1-12
+- `DOB_WK`: dia de la semana de la fecha de nacimiento 1-7, 1 es para domingo y así sucesivamente. 
+- `MAGER`: edad de la madre N
+- `TBO\_REC`: orden de nacimiento total. N(1)
+- `WTGAIN`: peso ganado de la madre en kg N
+- `SEX`: sexo del bebé C(1)
+- `APGAR5`: score Apgar 0-10
+- `DMEDUC`: Nivel educativo de la madre C
+- `UPREVIS`: Número de visitas prenatales: cuántas veces visitó a ginecóloga. N
+- `ESTGEST`: semanas de gestación estimadas N
+- `DMETH\_REC`: Método de nacimiento C
+- `DPLURAL`: Nacimientos múltiples (único, gemelos, triátes, etc.) C
+- `DBWTH`: Peso al nacer (en gramos) N
+
+En metadatos más completos, se documenta la manera en que los datos fueron recolectados, o se incluyen definiciones para conceptos ambiguos. De acuerdo a la estructura de datos, vemos que hay variables que son enteras, y hay tres variables categóricas o factores.
+
+Para realizar nuestro análisis, podemos separar los datos cuantitativos de los categóricos y éstos últimos utilizarlos como *etiquetas* para analizar la información por grupos. La matriz $X$ se conforma con todas las variables, convirtiendo a factores las variables categóricas.
+
+## Algunas preguntas relevantes sobre los datos
+
+Todo análisis comienza intentando responder algunas preguntas básicas que podamos responder obteniendo algunas estadísticas descriptivas de la información. Por ejemplo:
+
+- ¿Cómo se distribuyen las variables? ¿Hay datos faltantes?
+- ¿Cuál es el peso promedio de los bebés al nacimiento?
+- ¿Hay alguna relación entre la edad de la madre o su peso y el peso de los bebés, o los nacimientos múltiples?
+- ¿Hay alguna relación entre la edad de la madre al momento del nacimiento y su nivel de escolaridad?
+- ¿cuál es el periodo promedio de gestación y cuál es su desviación estándar?
+- ¿En qué meses nacen más bebés? ¿Cómo se distribuye el número de nacimientos por mes? ¿por día de la semana?
+- ¿Hay alguna relación entre la edad de la madre o su edad y el score Apgar del bebé?
+- ¿Se puede predecir el peso del bebé de características como el periodo estimado de gestación y la ganancia en peso de la madre?
+- ¿Podemos identificar nacimientos que llevan a un score APGAR bajo? Por ejemplo, ¿la edad de la madre es un factor de riesgo?
+
+En las siguientes secciones se responderán algunas de estas preguntas, y utilizaremos las herramientas de resumen numéricos y de visualización:
+
+- Análisis univariado para cada variable.
+- Medidas multivariadas de centralidad.
+- Medidas multivariadas de dispersión.
+- Gráficas univariadas 
+- Gráficas multivariadas
+
+
+### Análisis general
+
+#### Estadísticas sumarias
+
+Lo primero que podemos hacer es intentar conocer las variables que conforman la base de datos disponible. Podemos ver un resumen general de las variables. ¿Qué tipos de variables tenemos? ¿Cuáles son continuas, discretas, nominales, ordinales? ¿Qué variables tienen datos faltantes? ¿Cuántos casos tienen datos completos?
+
+```{r}
+summary(births2006.smpl)
+```
+
+De los resultados mostrados, podemos ver que algunas variables tienen datos faltantes. 
+
+Otra opción es usar el paquete `skimr` que se integra a la forma de trabajo con `tidyverse`:
+
+```{r}
+library(skimr)
+births2006.smpl %>% skim() # o skim(births2006.smpl)
+```
+
+También se puede agrupar por alguna de las variables categóricas y usarla para obtener resúmenes condicionales de las variables:
+
+```{r}
+births2006.smpl %>% 
+     group_by(SEX) %>%
+     skim()
+```
+
+Otro paquete útil para resúmenes numéricos. Esta tiene la ventaja de incluir algunas medidas adicionales y algunas estadísticas robustas, como la mediana, la media recortada, la diferencia media absoluta, etc: 
+
+```{r}
+library(psych)
+describe(births2006.smpl, check = F)  # También hay opción describe.by para grupos. 
+```
+
+
+Para variables categóricas o discretas, podemos ver los diferentes valores que toma un factor, o los valores que toma una variable finita:
+
+```{r}
+levels(births2006.smpl$DMEDUC)  # Niveles de un factor (valores únicos)
+unique(births2006.smpl$APGAR5)  # Valores únicos de una variable discreta
+```
+
+#### Distribuciones univariadas
+
+Podemos considerar distribuciones univariadas como la del peso de todos los bebés, o bien, considerar algunas distribuciones condicionales de interés. Por ejemplo, podemos comparar la distribución de los varones y niñas al nacer usando densidades o histogramas, o condicionar el peso del bebé con respecto a los nacimientos múltiples por ejemplo. 
+
+```{r}
+summary(births2006.smpl$DBWT/1000) # Convertimos el peso a kilos para facilitar su lectura
+
+# Usando ggplot
+p <- births2006.smpl %>%
+        group_by(SEX) %>%
+        select(DBWT,SEX) %>%
+        ggplot(aes(x = DBWT, fill = SEX)) + 
+          geom_density(alpha = 0.6) +
+          labs(title = "Densidad por género (en kg)",
+               x = "Peso del bebe al nacer",
+               y = "Densidad")
+        
+print(p)
+
+# Usando base
+with(births2006.smpl[complete.cases(births2006.smpl),],
+     {
+     plot(density(DBWT[SEX == "F"]/1000), xlab = "", ylab = "", col = "pink", main = "", lwd = 3)
+     lines(density(DBWT[SEX == "M"]/1000), col = "blue", lwd =3)
+     })
+# Agrega una leyenda para distinguir las líneas
+legend("topright", legend = c("M","H"), col = c("pink","blue"), lwd = c(3,3))
+title(main = "Distribución de los sexos de los bebés", xlab = "peso (kg)", ylab = "Densidad")
+```
+
+Otra versión con histogramas en `ggplot2`:
+
+```{r}
+ggplot(data =  births2006.smpl, aes(DBWT, geom = "density", fill = SEX)) + 
+       geom_histogram(bins = 100) + 
+       facet_grid(SEX~.) + 
+labs(title="Histograma de nacimientos por género (en kg)",
+      y = "Conteo",
+      x = "Peso del bebé al nacer")
+
+# versión densidad
+ggplot(data =  births2006.smpl, aes(DBWT, geom = "density", fill = SEX)) + 
+       geom_density() + 
+       facet_grid(SEX~.) + 
+labs(title="Densidad por género (en kg)",
+      y = "Conteo",
+      x = "Peso del bebé al nacer")
+```
+
+#### Boxplots
+
+Los boxplots son útiles para comparación de datos agrupados o comparación de subpoblaciones:
+
+```{r}
+boxplot(DBWT ~ DPLURAL, data = births2006.smpl, col =2:6,
+        main = " Distribución de pesos por tipo de parto")
+```
+
+Versión ggplot2:
+
+```{r}
+ggplot(data = births2006.smpl, aes(x = DPLURAL, y = DBWT, fill = DPLURAL)) + 
+        geom_boxplot() + 
+        labs(y = "Peso en (Kgs)", x = "Tipo de parto")
+
+# Podemos añadir otra variable para ver cambios en la distribución, por ejemplo, viendo el caso para 
+# nacimientos múltiples
+ggplot(data = births2006.smpl, aes(x = DPLURAL, y = DBWT/1000, fill = SEX)) + 
+       geom_boxplot()  # También podemos considerar interacción SEX:DPLURAL
+```
+
+¿Cuáles son las conclusiones del análisis del peso de los bebés?
+
+#### Nacimientos por día de la semana
+
+La codificación comienza con domingo (1).
+
+```{r waring=F,messages=F, echo=T, fig.height=3}
+births2006.smpl %>% 
+                group_by(DOB_WK) %>% 
+                summarize(Numero = n()) %>%
+                ggplot(aes(x = DOB_WK, y = Numero)) + 
+                geom_point(color="red", fill="red4", size=5) + 
+                           labs(y = "Frecuencia de Nacimientos", x = "Día de la semana") + 
+                scale_x_discrete(limits=c("Dom", "Lun","Mar","Mie","Jue","Vie","Sab")) +            
+                           coord_flip()
+# Con valores ordenados: 
+
+births2006.smpl %>% 
+                group_by(DOB_WK) %>% 
+                summarize(Numero = n()) %>%
+                mutate(diasemana = factor(recode(DOB_WK,`1` = "Dom", 
+                                                        `2` = "Lun", 
+                                                        `3` = "Mar", 
+                                                        `4` = "Mie", 
+                                                        `5` = "Jue", 
+                                                        `6` = "Vie", 
+                                                        `7` = "Sab"))) %>%
+                ggplot(aes(x = Numero, y= reorder(diasemana, Numero))) + 
+                geom_point(color="red", fill="red4", size=5) + 
+                           labs(x = "Frecuencia de Nacimientos", y = "Día de la semana")   
+                
+                
+
+# Otra opción:
+births2006.smpl %>% 
+                group_by(DOB_WK,SEX) %>% 
+                summarize(Numero = n()) %>%
+                ggplot(aes(x = DOB_WK, y = Numero, fill = SEX)) + 
+                  geom_bar(stat="identity",position = "dodge")  +
+                  labs(y = "Frecuencia de Nacimientos", x = "Día de la semana", 
+                       title = "Nacimientos por día de la semana") + 
+                  geom_text(aes(label = Numero), 
+                            vjust = 1.5, color = "white", 
+                            position = position_dodge(.9), size = 2.7)
+```
+
+¿Podemos identificar si el patrón de nacimientos es estacional? Necesitamos contar los nacimientos por mes, semana, y agregamos el método de nacimiento
+
+```{r}
+tabla <- table(semana = births2006.smpl$DOB_WK, 
+               mes = births2006.smpl$DOB_MM)
+tabla
+dotplot(tabla, groups = F) 
+
+# Otra versión con ggplot:
+births2006.smpl %>%
+   group_by(DOB_MM, DOB_WK) %>%
+   summarise(Numero = n(),.groups = "drop") %>%
+   ggplot(aes(x = DOB_WK, y = Numero)) +
+   geom_line() +
+   facet_wrap(. ~ DOB_MM)
+```
+
+
+
+### Por nacimientos múltiples
+
+```{r warning=F}
+ggplot(data = births2006.smpl, aes(DBWT/1000, fill = SEX)) + 
+       geom_density(alpha = 0.4) + 
+       facet_grid(DPLURAL~., scales = "free") + 
+       labs(y = "densidad", title = "Peso al nacer por tipo de nacimiento (en kg)")
+```
+
+### Relación entre edad, peso y nivel educativo de la madre con el peso del bebé
+
+```{r warning=F,echo=T, cache=T}
+births2006.smpl %>%
+      select(MAGER, APGAR5, SEX, DBWT, DMEDUC) %>%
+      ggplot(aes(x = MAGER, y = DBWT, col = DMEDUC, size = APGAR5)) +
+      geom_point(alpha=0.5)
+```
+
+A veces los scatterplots son difíciles de interpretar cuando tienen muchos datos. Una opción es hacer algo similar a lo que hacemos con los histgramas, considerando _buckets_ de los datos:
+
+```{r}
+library(hexbin)
+library(RColorBrewer) # para paletas de colores
+
+Z <- births2006.smpl %>% 
+       select(MAGER,DBWT)
+bin <- hexbin(Z, xbins = 60)
+colores <- colorRampPalette(rev(brewer.pal(11,"Spectral")))
+plot(bin, colramp = colores)
+```
+
+Quizá sea más informativa la matriz de correlaciones
+
+```{r echo=T, message=F, fig.height=5}
+a <- births2006.smpl %>% select(MAGER, APGAR5, DBWT, WTGAIN, UPREVIS, SEX) # subconjunto de variables
+library(corrplot)
+cor(a[,-6], use = "complete.obs")
+corrplot(cor(a[,-6], use = "complete.obs"), is.corr = T, 
+         method = "ellipse", diag = T,  addCoefasPercent = F, tl.col = "blue", addCoef.col = "red")
+```
+
+### Diferentes tipos de gráficas con `GGally`
+
+```{r warning=F, echo=T, message=F}
+library(GGally)
+ggpairs(a, mapping = aes(color = SEX), )
+```
+
+
+Todavía quedan muchas preguntas que responder y subanálisis a hacer.
+
+### Fuentes adicionales de información para exploración de datos
+
+- [How Data Visualization was born](https://towardsdatascience.com/the-pioneers-of-data-visualization-ca58b7dc8013)
+-  paquete `codebook`
+
+```{r}
+# Consideramos la limpieza de datos para que la comparación sea adecuada
+limpios <- births2006.smpl[!is.na(births2006.smpl$WTGAIN) &
+                           !is.na(births2006.smpl$DBWT) &
+                           births2006.smpl$DPLURAL == "1 Single" &
+                           births2006.smpl$ESTGEST >35, ]
+smoothScatter(limpios$WTGAIN, limpios$DBWT,pch = 16,cex=0.6)
+```
+
+
+

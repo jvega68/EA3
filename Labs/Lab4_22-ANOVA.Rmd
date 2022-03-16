@@ -1,0 +1,145 @@
+---
+title: 'Lab4: ANOVA y MANOVA'
+author: "Jorge de la Vega"
+date: "16/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Análisis de Varianza (ANOVA)
+
+El análisis de varianza (ANOVA) de un factor modela una variable de respuesta $Y$ en términos de una variable predictora $X$, que típicamente correponde a una variable categórica o _factor_ que puede tener varios niveles, a los que típicamente se les llama _tratamientos_.
+
+En general, si $X$ es una variable con $k$ niveles etiquetados $1,\ldots,k$, se cuenta con una muestra de tamaño $n_j$ para cada nivel $j$ de $X$. El modelo considerado es de la forma $Y_{ij} = \mu + \tau_{i} + \epsilon_{ij}$ donde: 
+
+- $\epsilon_{ij}$ representa un error estadístico, es una variable $N(0,\sigma^2)$
+- $\mu$ es la media fija para todas las observaciones
+- $\tau_{i}$ es el efecto del tratamiento $i$ de $X$ en las mediciones ($i=1,\ldots,k$)
+
+Otra manera equivalente de especificar el modelo es definiendo $\mu_i = \mu + \tau_i$ y especificar $y_{ij}\sim N(\mu_i,\sigma^2)$ para $i \in \{1,\ldots,k\}$, $j\in \{1, \ldots,n_j\}$.
+
+En el siguiente ejemplo, por cada tipo de publicidad se tomó una muestra aleatoria de cinco establecimientos semejantes en todos sus aspectos y se registraron las ventas en un periodo determinado
+
+```{r}
+datos <- data.frame(y = c(41,38,37,42,35,50,55,47,52,55,35,42,43,39,45),
+                    publicidad = factor(rep(c("TV","Radio","Periódico"),rep(5,3)))
+)
+```
+
+Las medias muestrales son:
+
+```{r, message = F}
+tapply(datos$y,datos$publicidad,mean) # manera tradicional de aplicar funciones a subgrupos
+
+# Usando tidyverse
+library(dplyr)
+datos %>% group_by(publicidad) %>%
+          summarize(medias = mean(y),
+                    desv.std = sd(y))
+```
+
+Usualmente en estos casos nos interesa probar la hipótesis de igualdad de medias
+
+\[ H_0: \mu_1 = \cdots = \mu_k \]
+
+Que equivale a suponer que los efectos $\tau_i$ son nulos. El estadístico de prueba se construye a partir de la fórmula de descomposición de varianza:
+\[ SCT = SCTr + SCE\]
+La estadística de prueba es $F = \frac{SCTr/(k-1)}{SCE/(N-k)}$. 
+
+Para visualizar estos datos:
+
+```{r}
+boxplot(y ~ publicidad, data = datos)  # gráfica tradicional
+
+# Usando ggplot2
+library(ggplot2)
+datos %>% 
+      ggplot(aes(x=publicidad, y = y)) + 
+      geom_boxplot()
+
+```
+
+Podemos hacer esta descomposición con 
+
+```{r}
+mod1 <- aov(y ~ publicidad, data = datos)
+summary(mod1)
+```
+
+Otra forma de obtener el resultado es
+
+```{r}
+mod2 <- lm(y ~ publicidad, data = datos)
+anova(mod2)
+```
+
+Estas pruebas son globales. ¿Cómo podemos hacer pruebas para pares de variables? ¿Cómo calculamos intervalos de confianza para los parámetros? Tenemos que ver más adelante estos métodos. 
+
+
+## Análisis multivariado de varianza (MANOVA)
+
+Esta generalización permite analizar los efectos de uno o más factores en dos o más variables numéricas dependientes  (en un vector, pues). ANOVA sólo considera una variable dependiente. MANOVA permite considerar más variables. Por ejemplo: 
+
+Por ejemplo, podemos considerar ahora las ventas para dos productos A y B:
+
+```{r}
+datos <- data.frame(
+  ya = c(12.7, 19.89, 19.17, 18.92, 14.43, 14.70, 19.05, 24.9, 19.44, 19.05,
+         22, 19, 26, 21, 21, 26, 21, 24, 19, 27,
+         29, 28, 29, 28, 27, 30, 28, 28, 28, 28),
+  yb = c(22.98, 20.52, 28.28, 21.38, 22.66, 18.64, 19.43, 27.04, 26.21,25.75,
+         26, 29, 21, 25, 23, 25, 22, 29, 30, 22, 30, 
+         27, 36, 37, 35, 31, 32, 41, 31, 33),
+  publicidad = factor(rep(c("TV", "Radio","Periódico"), c(10,10,10))))
+
+with(datos, tapply(ya,publicidad,mean))
+with(datos, tapply(yb,publicidad,mean))  
+
+```
+
+En este caso, el modelo es de la forma: 
+\[ y_k = \mu_k + \epsilon_k\]
+Pero ahora cada componente del modelo es un vector de dimensión $p$.
+
+
+```{r}
+par(mfrow=c(1,2))
+boxplot(ya ~ publicidad,data= datos, main ="A")
+boxplot(yb ~ publicidad,data= datos, main = "B")
+
+# Con ggplot2, necesitamos manipular un poco los datos para ponerlo en formato "long": 
+# necesitamos crear una variable dummy para el tipo de producto (A o B) y poner las ventas en 
+# un sólo vector. Esto lo podemos hacer de la siguiente manera:
+
+library(tidyr)
+datos2 <- datos %>% 
+          pivot_longer(cols = c(ya,yb), 
+                       names_to = "producto",
+                       values_to = "ventas")
+glimpse(datos2)                      
+# La siguiente es una opción de varias posibles.
+datos2 %>% ggplot(aes(x = publicidad,y = ventas, fill = producto)) + geom_boxplot()     
+```
+
+Para ajustar un modelo MANOVA se utiliza:
+
+```{r}
+mod3 <- manova(cbind(ya,yb) ~ publicidad, datos)
+summary(mod3, test = "Wilks")
+```
+
+Para la prueba de hipótesis necesitamos construir la estadística de prueba que es una estadística que combine los componentes multivariados. El estadístico de prueba se basa en la descomposición de una matriz $T$, que contiene los cuadrados  de las desviaciones respecto a la media global, en dos matrices: 
+
+- una matriz $F$ que contiene las desviaciones entre la media de cada muestra y la media global (suma de cuadrados entre tratamientos) 
+
+- y una segunda matriz $W$ que contiene la suma de cuadrados de las desviaciones de cada elemento  de cada submuestra respecto de su media (suma de cuadrados dentro de los tratamientos:
+
+\[ T = F + W\]
+El estadístico de prueba es la lambda de Wilks:
+\[ \Lambda = \frac{|W|}{|F+W|}\]
+La distribución de este estadístico no se obtiene fácilmente. 
+
+Más adelante veremos todos los detalles de estos modelos y consideraremos extensiones del modelo a casos en donde los datos tienen más factores y posiblemente no están balanceados. 

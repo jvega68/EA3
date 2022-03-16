@@ -1,0 +1,109 @@
+---
+title: "Paradoja de Simpson o Efecto Yule-Simpson"
+author: "Jorge de la Vega"
+date: "9/2/2022"
+output: html_document
+---
+
+<style type="text/css">
+.main-container {
+  max-width: 1800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NULL, size = "tiny")
+options(width = 150)
+```
+
+# Paradoja de Simpson
+
+El estudio de las dependencias multivariadas puede ser compleja, aun en conjuntos de datos "simples". La paradoja de Simpson es un ejemplo en donde asociaciones marginales de variables pueden tener diferente dirección a las asociaciones condicionales, y le aplica a datos categóricos como a los cuantitativos. Consideremos dos ejemplos:
+
+
+## Ejemplo 1. Datos sobre pena de muerte
+
+Consideremos un conjunto de variables categóricas $X, Y, Z$, donde $Y$ es una variable de respuesta con $m$ niveles, $X$ es una variable explicativa con $n$ niveles y $Z$ es una variable de control con $l$ niveles. Estos datos se pueden acomodar en una tabla de contingencia de $m\times n \times l$ celdas y cada celda es el conteo observado para las combinaciones de las tres variables. Es una especie de histograma discreto de los datos. 
+
+En este ejemplo, Radelet (1991) realizó un estudio para evaluar los efectos de las características raciales en la decisión de un juez de sentenciar a pena de muerte al ofensor. Se tienen 674 casos considerados en 20 condados de Florida entre 1976 y 1987. Se tienen las siguientes variables
+
+- $Y$ indica si el juez declaró pena de muerte al ofensor (si o no)
+- $X$ es la raza del ofensor (blanca o negra)
+- $Z$ es la raza de la víctima (blanca o negra)
+
+Se tiene una tabla de contingencia de tres vías de $2\times 2\times 2$:
+
+```{r}
+datos <- data.frame(X = c("blanca", "negra", "blanca", "negra", "blanca","negra","blanca","negra"),
+                    Y = c("Si", "Si", "No", "No", "Si", "Si", "No","No"),
+                    Z = c("blanca", "blanca", "blanca", "blanca", "negra", "negra", "negra", "negra"),
+                    Frec = c(53, 11, 414, 37, 0, 4, 16, 139))
+
+A <- xtabs(Frec ~ Z +X +Y, data = datos)
+ftable(A) # muestra la tabla de contingencia de manera "flat"
+```
+
+
+Queremos describir las asociaciones condicionales entre la raza del ofensor y el veredicto de pena de muerte, controlando por la raza de la víctima. Obtenemos el % de pena de muerte ($Y|(X, Z=i)$):
+
+- Cuando las víctmas fueron blancas ($Z=1$), la pena de muerte se impuso 11/(11+37) - 53/(53+414) = 22.9% - 11.3% = 11.6% más veces para ofensores negros que para ofensores blancos.
+
+- Cuando las víctimas fueron negras ($Z=0$), la pena de muerte se impuso 4/(139+4) - 0/16 = 2.8% más veces para ofensores negros que para ofensores blancos. 
+
+**Entonces, controlando por la raza de la víctima, el % de penas de muertes fue mayor para negros que para blancos**
+
+Si ahora ignoramos a la raza de la víctima, para obtener $Y|X$, se tiene: 
+
+```{r}
+# Agregando con respecto a Z, o ignorando Z
+margin.table(A, margin = c(2,3))
+```
+
+Aquí los ofensores blancos reciben 53/(430+53)  - 15/(176+15) = 11% - 7.9% = 3.1% más veces la pena de muerte. **Es decir, la asociación se invirte**
+
+
+## Ejemplo 2: Resultados del Examen Suite of Assessments (SAT)
+
+Los siguientes datos corresponden a resultados del examen SAT (score total promedio) de 1997 de escuelas gringas, así como variables  que corresponden a mediciones del desempeño académico asociado.
+ 
+Se encontró que había una relación negativa entre el salario promedio anual de los maestros y el score total promedio de los alumnos que presentaron el SAT. ¿Esto implicaba que habría que pagar menos a los maestros?
+
+```{r}
+sat <- read.csv("https://raw.githubusercontent.com/jvega68/EA3/master/datos/sat.csv")
+head(sat)
+```
+
+Consideremos la regresión entre el score total y el salario de los maestros, ignorando cualquier otra variable:
+
+```{r}
+plot(sat$teacher_salary, sat$total_score)
+abline(lm(total_score ~ teacher_salary, data = sat), lwd = 2, col = "red")
+```
+
+Ahora bien, no todos los estados tienen el mismo tamaño, y cada estado pudo tener un porcentaje de estudiantes diferente tomando el examen. Esa característica está en la variable `perc_take_sat`. Consideremos una agrupación de observaciones en porcentajes:
+
+```{r}
+porcentaje <- cut(sat$perc_take_sat, breaks = c(0,20,50,81)) # genera una nueva variable por rango de porcentaje
+porcentaje[1:5]  # muestra los 5 primeros valores
+```
+
+Controlando por el porcentaje de casos que tomaron el examen en cada estado: 
+
+```{r}
+reg <- lm(total_score ~ teacher_salary +  porcentaje, data = sat)
+summary(reg)  # resumen del ajuste de la regresión
+```
+
+Ahora consideramos la nueva regresión incluyendo la variable porcentaje:
+
+```{r}
+plot(sat$teacher_salary, sat$total_score, col = as.numeric(porcentaje), pch =16)
+abline(reg$coef[1:2], col = 1, lwd = 2)
+abline(reg$coef[1] + reg$coef[3], reg$coef[2], col = 2, lwd = 2)
+abline(reg$coef[1] + reg$coef[4], reg$coef[2], col = 3, lwd = 2)
+```
+
+Vemos entonces que la conclusión cambia si consideramos la proporción de estudiantes que tomó el examen en cada estado. 
+
