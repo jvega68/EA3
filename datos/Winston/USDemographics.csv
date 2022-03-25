@@ -1,0 +1,50 @@
+No_ciudad,Ciudad,per_black,per_hispanic,per_asian,median_age,unemployment_rate,income_percapita100
+1,Albuquerque,3,35,2,32,5,18
+2,Atlanta,67,2,1,31,5,22
+3,Austin,12,23,3,29,3,19
+4,Baltimore,59,1,1,33,11,22
+5,Boston,26,11,5,30,5,24
+6,Charlotte,32,1,2,32,3,20
+7,Chicago,39,20,4,31,9,24
+8,Cincinnati,38,1,1,31,8,21
+9,Cleveland,47,5,1,32,13,22
+10,Columbus,23,1,2,29,3,13
+11,Dallas,30,21,2,30,9,22
+12,Denver,13,23,2,34,7,23
+13,Detroit,76,3,1,31,9,21
+14,El Paso,3,69,1,29,11,13
+15,Fort Worth,22,20,2,30,9,20
+16,Fresno,9,30,13,28,13,16
+17,Honolulu,1,5,71,37,5,24
+18,Houston,28,28,4,30,7,22
+19,Indianapolis,22,1,1,32,5,21
+20,Jacksonville,25,3,2,32,7,19
+21,Kansas City,30,4,1,33,6,21
+22,Las Vegas,11,13,4,33,5,20
+23,Long Beach,14,24,14,30,8,21
+24,Los Angeles,14,40,10,31,11,21
+25,Memphis,55,1,1,32,9,20
+26,Miami,27,63,1,36,12,17
+27,Milwaukee,31,6,2,30,5,22
+28,Minneapolis,13,2,4,32,5,23
+29,Nashville,23,1,1,33,3,24
+30,New Orleans,62,4,2,32,7,18
+31,NY,29,24,7,34,11,27
+32,Oakland,44,14,15,33,10,24
+33,Oklahoma City,16,5,2,32,6,17
+34,Omaha,13,3,1,32,5,20
+35,Philadelphia,40,6,3,33,9,23
+36,Phoenix,5,20,2,31,4,19
+37,Pittsburgh,26,1,2,35,7,21
+38,Portland,8,3,5,35,7,20
+39,Sacramento,15,16,15,32,8,20
+40,St. Louis,48,1,1,33,8,23
+41,San Antonio,7,56,1,30,5,17
+42,San Diego,9,21,12,31,8,20
+43,San Francisco,11,14,29,36,6,31
+44,San Jose,5,27,20,30,8,26
+45,Seattle,10,4,12,35,5,28
+46,Toledo,20,4,1,32,6,19
+47,Tucson,4,29,2,31,3,19
+48,Tulsa,14,3,1,33,4,20
+49,Virginia Beach,14,3,4,29,6,18
