@@ -1,0 +1,282 @@
+Codebook for the Northridge Earthquake Data (Earthq.txt)
+
+Variable   Description
+Name       and Coding 
+-------------------------------------------------------------------------------
+
+CSID       RESPONDENT ID
+
+V127       HOME DAMAGED
+           Was the home you were living in damaged enough to need repairs,
+           or did you or anyone else in you home have any other personal
+           property or belongings damaged during this earthquake?
+
+           1  YES
+           5  NO
+           8  DON'T KNOW
+           9  REFUSED
+
+
+V173       EVACUATE HOME
+           As a result of the earthquake, did you evacuate your home, or
+           leave it for any period of time because of damage, possible
+           damage, or how you were feeling?
+
+           1   YES, LEFT HOME
+           5   NO
+           8   DON'T KNOW
+           9   REFUSED
+
+
+W220       R PHYS INJURY
+           First of all, how about you, did you have any[n] physical
+           injuries--even minor cuts and bruises--as a result of this
+           earthquake?
+
+           1  YES
+           5  NO     
+           8  DON'T KNOW
+           9  REFUSED
+
+        
+W238       R EMOT INJURY
+           What about emotional injuries?  Would you say that you had any
+           emotional injuries as a result of this earthquake?
+
+           1  YES
+           5  NO     
+           8  DON'T KNOW
+           9  REFUSED
+
+        
+V346       NERVOUS/SHAKY
+           How much would you say you
+           were bothered by nervousness or shakiness in the past two weeks,
+           including today?
+
+           1  NOT AT ALL
+           2  A LITTLE BIT
+           3  MODERATELY
+           4  QUITE A BIT
+           5  EXTREMELY
+           8  DON'T KNOW
+           9  REFUSED
+
+
+V351       EASILY ANNOYED
+           How about feeling easily annoyed or irritated?
+           How much were you bothered by this feeling
+           during the past two weeks, including today?
+
+           1  NOT AT ALL
+           2  A LITTLE BIT
+           3  MODERATELY
+           4  QUITE A BIT
+           5  EXTREMELY
+           8  DON'T KNOW
+           9  REFUSED
+
+
+        
+
+V357       SCARED    
+           How about suddenly scared for no reason?
+           How much were you bothered by this feeling
+           during the past two weeks, including today?
+
+           1  NOT AT ALL
+           2  A LITTLE BIT
+           3  MODERATELY
+           4  QUITE A BIT
+           5  EXTREMELY    
+           8  DON'T KNOW
+           9  REFUSED
+
+
+
+V358       TEMPER
+           How much were you bothered by temper outburst that you could
+           not control in the past two weeks, including today?
+           How much were you bothered by this feeling
+           during the past two weeks, including today?
+
+           1  NOT AT ALL
+           2  A LITTLE BIT
+           3  MODERATELY
+           4  QUITE A BIT
+           5  EXTREMELY
+           8  DON'T KNOW
+           9  REFUSED
+
+
+
+V364       FEARFUL
+           How much were you bothered by feeling fearful in the past two weeks,
+           including today?
+           How much were you bothered by this feeling
+           during the past two weeks, including today?
+
+           1  NOT AT ALL
+           2  A LITTLE BIT
+           3  MODERATELY
+           4  QUITE A BIT
+           5  EXTREMELY
+           8  DON'T KNOW
+           9  REFUSED
+
+        
+V383       TENSE
+           How about feeling tense or keyed up?
+           How much were you bothered by this feeling
+           during the past two weeks, including today?
+
+           1  NOT AT ALL
+           2  A LITTLE BIT
+           3  MODERATELY
+           4  QUITE A BIT
+           5  EXTREMELY
+           8  DON'T KNOW
+           9  REFUSED
+
+        
+V385       URGE TO INJURE
+           How about having urges to beat, injure or harm someone?
+           How much were you bothered by this feeling
+           during the past two weeks, including today?
+
+           1  NOT AT ALL
+           2  A LITTLE BIT
+           3  MODERATELY
+           4  QUITE A BIT
+           5  EXTREMELY
+           8  DON'T KNOW
+           9  REFUSED
+
+
+
+V386       URGE TO BREAK
+           How much were you bothered by having urges to break or smash things
+           in the past two weeks, including today?
+           How much were you bothered by this feeling
+           during the past two weeks, including today?
+
+           1  NOT AT ALL
+           2  A LITTLE BIT
+           3  MODERATELY
+           4  QUITE A BIT
+           5  EXTREMELY
+           8  DON'T KNOW
+           9  REFUSED
+
+
+        
+V390       TERROR/PANIC
+           How much were you bothered by spells of terror or panic in the
+           past two weeks, including today?
+           How much were you bothered by this feeling
+           during the past two weeks, including today?
+
+           1  NOT AT ALL
+           2  A LITTLE BIT
+           3  MODERATELY
+           4  QUITE A BIT
+           5  EXTREMELY
+           8  DON'T KNOW
+           9  REFUSED
+
+
+
+
+V391       FREQ ARGUMENTS    
+           How about getting into frequent arguments?
+           How much were you bothered by this feeling
+           during the past two weeks, including today?
+
+           1  NOT AT ALL
+           2  A LITTLE BIT
+           3  MODERATELY
+           4  QUITE A BIT
+           5  EXTREMELY
+           8  DON'T KNOW
+           9  REFUSED
+
+
+
+V394       RESTLESS    
+           How much were you bothered by feeling so restless you couldn't
+           sit still in the past two weeks, including today?
+           How much were you bothered by this feeling
+           during the past two weeks, including today?
+
+           1  NOT AT ALL
+           2  A LITTLE BIT
+           3  MODERATELY
+           4  QUITE A BIT
+           5  EXTREMELY
+           8  DON'T KNOW
+           9  REFUSED
+
+V449       RENT/OWN
+           Do you own your own home or do you rent?
+           1  OWN
+           5  RENT
+           8  DON'T KNOW
+           9  REFUSED
+
+
+V455       MARITAL STATUS
+           Now I would like to ask some background information about yourself?
+           what is your current marital status?  Would that be never
+           married, married, living together as married, divorced, separated,
+           or widowed.
+
+           1  NEVER MARRIED
+           2  MARRIED
+           3  LIVING TOGETHER AS MARRIED
+           4  DIVORCED
+           5  SEPARATED
+           6  WIDOWED
+           8  DON'T KNOW
+           9  REFUSED
+
+
+        
+V461       HIGHEST GRADE
+           What is the highest grade in school you completed and received
+           credit for?
+    
+           0         NONE
+           1-12      ELEMENTARY/MIDDLE/HIGH SCHOOL
+           13-16     COLLEGE/OTHER POST-HIGH SCHOOL SCHOOLING
+           17-25     POST-GRADUATE SCHOOL
+           98        DON'T KNOW
+           99        REFUSED
+
+RAGE       RESPONDENT AGE
+
+           (0-97 YEARS)
+           IF OLDER THAN 97, RESPOND 97
+           IF YOUNGER THAN 1 YEAR, RESPOND 0
+
+RSEX       RESPONDENT SEX
+
+           1 MALE
+           5 FEMALE
+
+NEWETHN    COLLAPSED FIRST ETHN
+
+           1  White
+           2  Hispanic
+           3  Native American
+           4  Asian/Pacific Islander
+           5  African American
+           6  Other
+
+
+MMI        MERCALLI INTENSITY
+           Localized measure of earthquake strength    
+
+           6  VI
+           7  VII
+           8  VIII
+           9  VIIII
